@@ -1,8 +1,11 @@
 // === 配置 ===
 const REPO_OWNER = 'klnm2037453337-sudo';
 const REPO_NAME = 'sohuxw';
+const GH_PAT = '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';
 const WORKFLOW_ID = 'generate.yml';
 const POSTS_URL = 'data/posts.json';
+const POLL_INTERVAL = 6000;
+const POLL_TIMEOUT = 120000;
 
 // === DOM 元素 ===
 const generateBtn = document.getElementById('generate-btn');
@@ -17,6 +20,8 @@ const confirmOk = document.getElementById('confirm-ok');
 const confirmCancel = document.getElementById('confirm-cancel');
 
 // === 状态 ===
+let isGenerating = false;
+let pollTimer = null;
 let pendingDeleteId = null;
 
 // === 工具函数 ===
@@ -206,14 +211,86 @@ function executeDelete() {
 confirmOk.addEventListener('click', executeDelete);
 confirmCancel.addEventListener('click', hideDeleteConfirm);
 
-// === 触发生成（打开 GitHub Actions 页面） ===
+// === 触发生成（调用 GitHub API） ===
 
-function triggerWorkflow() {
-    const workflowUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/actions/workflows/${WORKFLOW_ID}`;
-    window.open(workflowUrl, '_blank');
+async function triggerWorkflow() {
+    if (isGenerating) return;
+
+    const style = getStyle();
+    isGenerating = true;
+    generateBtn.disabled = true;
+    generateBtn.textContent = '生成中...';
     hint.classList.remove('hidden');
-    // 5 秒后隐藏提示
-    setTimeout(() => { hint.classList.add('hidden'); }, 5000);
+    hideMessage();
+
+    try {
+        const beforeResp = await fetch(POSTS_URL);
+        const beforePosts = beforeResp.ok ? await beforeResp.json() : [];
+        const latestIdBefore = beforePosts.length > 0 ? beforePosts[0].id : null;
+
+        const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/${WORKFLOW_ID}/dispatches`;
+        const resp = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/vnd.github+json',
+                'Authorization': `token ${GH_PAT}`,
+            },
+            body: JSON.stringify({ ref: 'main', inputs: { style: style } })
+        });
+
+        if (resp.status !== 204) {
+            const errBody = await resp.text();
+            throw new Error(`${resp.status}: ${errBody}`);
+        }
+
+        startPolling(latestIdBefore);
+    } catch (err) {
+        console.error('Workflow trigger error:', err);
+        showMessage('生成失败，请稍后重试', 'error');
+        resetGenerateButton();
+    }
+}
+
+function resetGenerateButton() {
+    isGenerating = false;
+    generateBtn.disabled = false;
+    generateBtn.textContent = '生成一篇 →';
+    hint.classList.add('hidden');
+    if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+    }
+}
+
+function startPolling(latestIdBefore) {
+    const startTime = Date.now();
+
+    async function poll() {
+        if (Date.now() - startTime > POLL_TIMEOUT) {
+            showMessage('响应超时，请手动刷新页面查看', 'error');
+            resetGenerateButton();
+            return;
+        }
+
+        try {
+            const resp = await fetch(POSTS_URL + '?t=' + Date.now());
+            if (resp.ok) {
+                const posts = await resp.json();
+                if (posts.length > 0 && posts[0].id !== latestIdBefore) {
+                    await loadAndRender();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    resetGenerateButton();
+                    return;
+                }
+            }
+        } catch {
+            // 继续轮询
+        }
+
+        pollTimer = setTimeout(poll, POLL_INTERVAL);
+    }
+
+    poll();
 }
 
 generateBtn.addEventListener('click', triggerWorkflow);
