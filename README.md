@@ -22,8 +22,8 @@ Settings → Developer settings → Personal access tokens → Fine-grained toke
 
 ### 3. 设置 Secrets
 仓库 Settings → Secrets and variables → Actions → New repository secret:
-- 名称: `ANTHROPIC_API_KEY`
-- 值: 你的 Anthropic API Key
+- 名称: `DEEPSEEK_API_KEY`
+- 值: 你的 DeepSeek API Key
 
 ### 4. 修改 script.js 中的配置
 ```javascript
@@ -43,5 +43,5 @@ Settings → Actions → General → Workflow permissions → 选 "Read and writ
 ## 技术栈
 - GitHub Pages（静态托管）
 - GitHub Actions（云端执行）
-- Claude API (Haiku) 生成文字
+- DeepSeek API 生成文字
 - Unsplash API 搜索配图

@@ -6,7 +6,7 @@ import random
 import string
 from datetime import datetime, timezone, timedelta
 
-import anthropic
+from openai import OpenAI
 import requests
 
 CST = timezone(timedelta(hours=8))
@@ -26,20 +26,22 @@ SYSTEM_PROMPT = """你是搜狐新闻自媒体作者"江"，每天发布有营�
 
 
 def generate_post_text(style: str) -> dict:
-    """调用 Claude API 生成帖子文字和图片关键词"""
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-
-    message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=500,
-        system=SYSTEM_PROMPT,
-        messages=[{
-            "role": "user",
-            "content": f"请生成一篇 style={style} 的帖子。"
-        }]
+    """调用 DeepSeek API 生成帖子文字和图片关键词"""
+    client = OpenAI(
+        api_key=os.environ["DEEPSEEK_API_KEY"],
+        base_url="https://api.deepseek.com"
     )
 
-    raw = message.content[0].text.strip()
+    message = client.chat.completions.create(
+        model="deepseek-chat",
+        max_tokens=500,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": f"请生成一篇 style={style} 的帖子。"}
+        ]
+    )
+
+    raw = message.choices[0].message.content.strip()
     # 提取 JSON（处理可能的 markdown 代码块）
     if "```json" in raw:
         raw = raw.split("```json")[1].split("```")[0].strip()
