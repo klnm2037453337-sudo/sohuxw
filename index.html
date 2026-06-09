@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜狐热帖助手</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>🔥 搜狐热帖助手</h1>
+            <span class="badge">江的助手</span>
+        </header>
+
+        <!-- 控制栏 -->
+        <div class="controls">
+            <div class="style-selector">
+                <label class="radio-label">
+                    <input type="radio" name="style" value="chatty" checked>
+                    <span>💬 闲聊</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="style" value="newsflash">
+                    <span>⚡ 快讯</span>
+                </label>
+            </div>
+            <button id="generate-btn" class="btn-generate">生成一篇 →</button>
+            <span id="today-count" class="counter">今日: 0</span>
+        </div>
+
+        <!-- 提示信息 -->
+        <p id="hint" class="hint hidden">点击生成后请稍等几秒，江 正在为你写稿 ✍️</p>
+
+        <!-- 全局消息 -->
+        <div id="message" class="message hidden"></div>
+
+        <!-- 帖子列表 -->
+        <main id="post-list" class="post-list">
+            <div id="empty-state" class="empty-state">
+                暂无帖子，点击上方按钮生成第一条吧~
+            </div>
+        </main>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="confirm-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <p id="confirm-text">确认删除这条帖子吗？</p>
+            <div class="dialog-actions">
+                <button id="confirm-cancel" class="btn-cancel">取消</button>
+                <button id="confirm-ok" class="btn-danger">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
