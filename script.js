@@ -233,7 +233,7 @@ async function triggerWorkflow() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${GH_PAT}`,
+                'Authorization': `token ${GH_PAT}`,
                 'Accept': 'application/vnd.github+json',
             },
             body: JSON.stringify({ ref: 'main', inputs: { style: style } })
