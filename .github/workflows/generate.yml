@@ -1,0 +1,43 @@
+name: Generate Post
+
+on:
+  workflow_dispatch:
+    inputs:
+      style:
+        description: '帖子风格'
+        required: true
+        type: choice
+        default: 'chatty'
+        options:
+          - chatty      # 轻松闲聊
+          - newsflash   # 一句话快讯
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic requests
+
+      - name: Generate post
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/generate.py --style "${{ inputs.style }}"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/posts.json
+          git diff --staged --quiet || git commit -m "feat: add new post [skip ci]"
+          git push
