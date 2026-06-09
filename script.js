@@ -1,7 +1,7 @@
 // === 配置 ===
-const REPO_OWNER = 'YOUR_USERNAME';    // 替换为 GitHub 用户名
+const REPO_OWNER = 'klnm2037453337-sudo';
 const REPO_NAME = 'sohuxw';            // 替换为仓库名
-const GH_PAT = 'YOUR_PAT_TOKEN';       // GitHub Fine-grained PAT (仅 actions:write 权限)
+const GH_PAT = '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';       // GitHub Fine-grained PAT (仅 actions:write 权限)
 const WORKFLOW_ID = 'generate.yml';
 const POSTS_URL = 'data/posts.json';
 const POLL_INTERVAL = 5000;            // 轮询间隔 5 秒
