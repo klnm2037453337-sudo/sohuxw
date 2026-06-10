@@ -3,57 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>搜狐热帖助手</title>
+    <title>内容助手</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- 头部 -->
-        <header class="header">
-            <h1>🔥 搜狐热帖助手</h1>
-            <span class="badge">江的助手</span>
-        </header>
-
-        <!-- 控制栏 -->
-        <div class="controls">
-            <div class="style-selector">
-                <label class="radio-label">
-                    <input type="radio" name="style" value="chatty" checked>
-                    <span>💬 闲聊</span>
-                </label>
-                <label class="radio-label">
-                    <input type="radio" name="style" value="newsflash">
-                    <span>⚡ 快讯</span>
-                </label>
-            </div>
-            <button id="generate-btn" class="btn-generate">生成一篇 →</button>
-            <span id="today-count" class="counter">今日: 0</span>
+    <!-- 场景背景层 -->
+    <div class="scene">
+        <div class="scene-sky"></div>
+        <div class="scene-sun"></div>
+        <div class="clouds">
+            <div class="cloud c1"></div>
+            <div class="cloud c2"></div>
+            <div class="cloud c3"></div>
+            <div class="cloud c4"></div>
+            <div class="cloud c5"></div>
+            <div class="cloud c6"></div>
+            <div class="cloud c7"></div>
         </div>
-
-        <!-- 提示信息 -->
-        <p id="hint" class="hint hidden">点击生成后请稍等几秒，江 正在为你写稿 ✍️</p>
-
-        <!-- 全局消息 -->
-        <div id="message" class="message hidden"></div>
-
-        <!-- 帖子列表 -->
-        <main id="post-list" class="post-list">
-            <div id="empty-state" class="empty-state">
-                暂无帖子，点击上方按钮生成第一条吧~
+        <div class="scene-horizon"></div>
+        <div class="scene-island">
+            <div class="island-hill"></div>
+            <div class="island-highlight"></div>
+            <div class="cabin">
+                <div class="cabin-roof"></div>
+                <div class="cabin-body"><div class="cabin-window"></div></div>
             </div>
-        </main>
+            <div class="pole p1"></div>
+            <div class="pole p2"></div>
+            <div class="wire"></div>
+            <div class="grass g1"></div>
+            <div class="grass g2"></div>
+            <div class="grass g3"></div>
+        </div>
     </div>
 
-    <!-- 确认对话框 -->
-    <div id="confirm-dialog" class="dialog-overlay hidden">
+    <!-- 主内容 -->
+    <div class="main-content">
+        <!-- 首屏：操作面板 + 预览 + 滚动栏 -->
+        <section class="hero">
+            <div class="hero-inner">
+                <!-- 左：操作面板 -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h1 class="panel-title">内容助手</h1>
+                        <p class="panel-subtitle">选个方向，江帮你写</p>
+                    </div>
+
+                    <!-- 分类标签 -->
+                    <div class="category-tabs" id="category-tabs">
+                        <!-- JS 动态生成 -->
+                    </div>
+
+                    <!-- 子类型标签 -->
+                    <div class="genre-pills" id="genre-pills">
+                        <!-- JS 动态生成 -->
+                    </div>
+
+                    <div class="panel-divider"></div>
+
+                    <!-- 字数选择 -->
+                    <div class="wordcount-row">
+                        <span class="row-label">字数</span>
+                        <div class="wordcount-pills" id="wordcount-pills">
+                            <!-- JS 动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 链接输入 + 生成按钮 -->
+                    <div class="input-row">
+                        <input type="url" id="source-url"
+                               placeholder="🔗 粘贴新闻链接（选填，留空则AI自由选题）"
+                               class="url-input">
+                        <button id="generate-btn" class="btn-generate">生成 →</button>
+                    </div>
+                </div>
+
+                <!-- 右：预览面板 -->
+                <div class="preview" id="preview-panel">
+                    <div class="preview-header">✨ 本次生成预览</div>
+                    <div class="preview-body" id="preview-body">
+                        <div class="preview-placeholder">
+                            <div class="preview-icon">📝</div>
+                            <p>点击左侧「生成」按钮<br/>内容将在这里显示</p>
+                        </div>
+                    </div>
+                    <div class="preview-footer">
+                        <button class="btn-copy-preview" id="btn-copy-preview" disabled>一键复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部横向滚动栏 -->
+            <div class="scroll-strip">
+                <div class="scroll-strip-title">过去生成</div>
+                <div class="scroll-strip-row">
+                    <button class="scroll-btn scroll-left" id="scroll-left" aria-label="向左滚动">◂</button>
+                    <div class="scroll-track" id="scroll-track">
+                        <!-- JS 动态填充缩略卡片 -->
+                    </div>
+                    <button class="scroll-btn scroll-right" id="scroll-right" aria-label="向右滚动">▸</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 首屏以下：帖子网格 -->
+        <section class="post-grid-section">
+            <div class="section-divider">
+                <span>全部帖子</span>
+            </div>
+            <div class="post-grid" id="post-grid">
+                <!-- JS 动态填充 -->
+            </div>
+            <div id="empty-state" class="empty-state hidden">
+                暂无帖子，点击上方按钮生成第一条吧~
+            </div>
+        </section>
+
+        <!-- 页脚 -->
+        <footer class="page-footer">
+            江 正在为你写稿 ✍️
+        </footer>
+    </div>
+
+    <!-- 帖子详情弹窗 -->
+    <div class="modal-overlay hidden" id="modal-overlay">
+        <div class="modal-box" id="modal-box">
+            <!-- JS 动态填充 -->
+        </div>
+    </div>
+
+    <!-- 确认删除对话框 -->
+    <div class="dialog-overlay hidden" id="confirm-dialog">
         <div class="dialog-box">
-            <p id="confirm-text">确认删除这条帖子吗？</p>
+            <p>确认删除这条帖子吗？</p>
             <div class="dialog-actions">
                 <button id="confirm-cancel" class="btn-cancel">取消</button>
                 <button id="confirm-ok" class="btn-danger">确定</button>
             </div>
         </div>
     </div>
+
+    <!-- 生成中状态提示 -->
+    <div class="toast hidden" id="toast"></div>
 
     <script src="script.js"></script>
 </body>

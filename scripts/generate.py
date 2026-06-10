@@ -1,4 +1,4 @@
-"""搜狐热帖生成器 — AI 生成短文 + 自动配图"""
+"""搜狐热帖生成器 — AI 生成短文 + URL 参考"""
 import argparse
 import json
 import os
@@ -7,42 +7,92 @@ import string
 from datetime import datetime, timezone, timedelta
 
 from openai import OpenAI
-import requests
+import trafilatura
 
 CST = timezone(timedelta(hours=8))
 
-SYSTEM_PROMPT = """你是搜狐新闻自媒体作者"江"，每天发布有营养的原创短内容，不标题党，不博眼球。
+GENRE_PROMPTS = {
+    "时事短评": "你是自媒体作者"江"。针对参考新闻写一篇小篇幅评论（无参考链接时自行选题）。有观点但不偏激，不标题党。口语化、自然、有个人感受。字数：{word_count}。",
+    "国家政策": "你是自媒体作者"江"。用通俗易懂的语言解读一项国家政策或民生新规，让普通人能看懂。说人话，不念文件。字数：{word_count}。",
+    "历史感悟": "你是自媒体作者"江"。讲一个历史故事，并从中提炼出对现代生活的启发。故事要生动，启发要有共鸣。字数：{word_count}。",
+    "认知笔记": "你是自媒体作者"江"。介绍一个思维模型、心理学效应或认知偏误，用生活化的例子解释它。字数：{word_count}。",
+    "医学健康科普": "你是自媒体作者"江"。科普一个医学健康知识（养生/疾病防治/用药/急救/心理）。科学准确但语言通俗。字数：{word_count}。",
+    "生活常识科普": "你是自媒体作者"江"。科普一个日常生活实用知识（饮食/家居/安全/礼仪/消费）。实用、接地气。字数：{word_count}。",
+    "人文社科科普": "你是自媒体作者"江"。科普一个人文社科知识点（历史/考古/语言/法律/经济/民俗/哲学）。有趣有料。字数：{word_count}。",
+    "冷知识": "你是自媒体作者"江"。分享一个有趣的反常识冷知识，让人看完觉得"原来如此"。简短有力。字数：{word_count}。",
+    "财经小课": "你是自媒体作者"江"。用通俗语言讲一个个人理财知识或经济概念，帮助读者避坑或省钱。字数：{word_count}。",
+    "科技新知": "你是自媒体作者"江"。介绍一个新产品、AI工具或数码技巧，让读者了解科技前沿。字数：{word_count}。",
+    "好物安利": "你是自媒体作者"江"。推荐一本书/电影/播客/工具，说明推荐理由和个人感受。真诚不浮夸。字数：{word_count}。",
+    "美食札记": "你是自媒体作者"江"。介绍一道美食的做法或科普一个食材知识。让人看了有食欲或学到东西。字数：{word_count}。",
+}
 
-你的写作风格由 style 参数决定：
-- style=chatty：轻松闲聊型。像跟朋友聊天一样分享一个热点话题。口语化、自然、有个人感受。可使用适当的 emoji。字数控制在150-200字。必须原创，不要以"//@某人"的形式转发。
-- style=newsflash：一句话快讯型。用一句简洁的话说清楚一个热点事件的要点。纯事实陈述，不带观点和情绪。字数控制在50-80字。
+WORD_COUNT_MAP = {
+    "极短": "30-60字",
+    "短": "60-120字",
+    "中": "120-200字",
+    "长": "200-300字",
+    "超长": "300-450字",
+}
 
-话题选择：从最近的社会、科技、财经、文娱、生活等领域的广泛热点中选取。不局限于单一领域。
+SYSTEM_PROMPT_TEMPLATE = """你是搜狐新闻自媒体作者"江"，每天发布有营养的原创短内容。
 
-除了文字内容，你还需要输出1-3个英文图片搜索关键词（image_keywords），用于从免费图库为帖子匹配一张相关配图。关键词应该具体、视觉化（如"electric car charging station"而不是"car"）。
+{genre_instruction}
 
-输出格式必须是严格的 JSON，不要输出其他内容：
-{"content": "帖子正文", "image_keywords": ["keyword1", "keyword2", "keyword3"]}"""
+输出格式必须是严格的 JSON：
+{{"content": "帖子正文（纯文本，不包含标题）"}}
+
+注意：
+- 输出纯文本正文，不要加"标题："等前缀
+- 不要使用 markdown 格式
+- 如果有参考链接内容，基于它来写，但不要直接复制
+- 如果没有参考链接，自行选择一个相关话题"""
 
 
-def generate_post_text(style: str) -> dict:
-    """调用 DeepSeek API 生成帖子文字和图片关键词"""
+def fetch_url_content(url: str) -> str | None:
+    """抓取网页正文，失败返回 None"""
+    try:
+        downloaded = trafilatura.fetch_url(url)
+        if downloaded:
+            text = trafilatura.extract(downloaded, include_links=False,
+                                       include_images=False, include_tables=False)
+            if text:
+                return text[:3000]
+    except Exception:
+        pass
+    return None
+
+
+def generate_post_text(genre: str, word_count: str, source_url: str) -> dict:
+    """调用 DeepSeek API 生成帖子"""
     client = OpenAI(
         api_key=os.environ["DEEPSEEK_API_KEY"],
         base_url="https://api.deepseek.com"
     )
 
+    word_range = WORD_COUNT_MAP.get(word_count, "120-200字")
+    genre_instruction = GENRE_PROMPTS.get(genre, GENRE_PROMPTS["时事短评"]).format(word_count=word_range)
+    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(genre_instruction=genre_instruction)
+
+    user_message = ""
+    if source_url:
+        article_text = fetch_url_content(source_url)
+        if article_text:
+            user_message = f"请基于以下参考文章的内容写一篇帖子：\n\n{article_text}"
+        else:
+            user_message = f"请自行选择一个与「{genre}」相关的热点话题写一篇帖子。（参考链接抓取失败，请自由选题）"
+    else:
+        user_message = f"请自行选择一个与「{genre}」相关的热门话题写一篇帖子。"
+
     message = client.chat.completions.create(
         model="deepseek-chat",
-        max_tokens=500,
+        max_tokens=800,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"请生成一篇 style={style} 的帖子。"}
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
         ]
     )
 
     raw = message.choices[0].message.content.strip()
-    # 提取 JSON（处理可能的 markdown 代码块）
     if "```json" in raw:
         raw = raw.split("```json")[1].split("```")[0].strip()
     elif "```" in raw:
@@ -51,59 +101,28 @@ def generate_post_text(style: str) -> dict:
     return json.loads(raw)
 
 
-def search_image(keywords: list[str]) -> tuple[str | None, str | None]:
-    """用关键词搜索 Unsplash，返回 (image_url, image_credit)"""
-    for keyword in keywords:
-        url = "https://api.unsplash.com/search/photos"
-        params = {
-            "query": keyword,
-            "per_page": 1,
-            "orientation": "landscape"
-        }
-        resp = requests.get(
-            url,
-            params=params,
-            headers={"Accept-Version": "v1"},
-            timeout=10
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            results = data.get("results", [])
-            if results:
-                photo = results[0]
-                image_url = photo["urls"]["regular"]
-                credit = f"Photo by {photo['user']['name']} / Unsplash"
-                return image_url, credit
-
-    return None, None
-
-
 POSTS_FILE = "data/posts.json"
 MAX_POSTS = 200
 
 
 def load_posts() -> list[dict]:
-    """读取现有帖子"""
     with open(POSTS_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_posts(posts: list[dict]):
-    """写入帖子，保留最近 MAX_POSTS 条"""
     trimmed = posts[:MAX_POSTS]
     with open(POSTS_FILE, "w", encoding="utf-8") as f:
         json.dump(trimmed, f, ensure_ascii=False, indent=2)
 
 
 def append_post(post: dict):
-    """将新帖子插入到数组头部"""
     posts = load_posts()
     posts.insert(0, post)
     save_posts(posts)
 
 
 def make_post_id() -> str:
-    """生成唯一 ID: YYYYMMDD-HHMMSS-随机6位"""
     now = datetime.now(CST)
     ts = now.strftime("%Y%m%d-%H%M%S")
     rand = "".join(random.choices(string.ascii_lowercase + string.digits, k=6))
@@ -112,38 +131,27 @@ def make_post_id() -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="生成一篇搜狐热帖")
-    parser.add_argument(
-        "--style",
-        choices=["chatty", "newsflash"],
-        default="chatty",
-        help="帖子风格"
-    )
+    parser.add_argument("--genre", default="时事短评", help="内容类型")
+    parser.add_argument("--word-count", default="中", help="字数档位")
+    parser.add_argument("--source-url", default="", help="参考链接（可选）")
     args = parser.parse_args()
 
-    # 1. 生成文字
-    result = generate_post_text(args.style)
-    content = result["content"]
-    keywords = result["image_keywords"]
+    result = generate_post_text(args.genre, args.word_count, args.source_url)
 
-    # 2. 搜索配图
-    image_url, image_credit = search_image(keywords)
-
-    # 3. 组装帖子
     post = {
         "id": make_post_id(),
-        "content": content,
-        "style": args.style,
-        "image_url": image_url,
-        "image_credit": image_credit,
+        "content": result["content"],
+        "genre": args.genre,
+        "word_count": args.word_count,
         "created_at": datetime.now(CST).isoformat()
     }
 
-    # 4. 写入 JSON
     append_post(post)
     print(f"Generated post: {post['id']}")
-    print(f"  style: {args.style}")
-    print(f"  content: {content[:60]}...")
-    print(f"  image: {image_url or 'none'}")
+    print(f"  genre: {args.genre}")
+    print(f"  word_count: {args.word_count}")
+    print(f"  source_url: {args.source_url or 'none'}")
+    print(f"  content: {post['content'][:80]}...")
 
 
 if __name__ == "__main__":

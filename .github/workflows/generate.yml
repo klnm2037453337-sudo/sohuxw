@@ -3,14 +3,21 @@ name: Generate Post
 on:
   workflow_dispatch:
     inputs:
-      style:
-        description: '帖子风格'
+      genre:
+        description: '内容类型'
         required: true
-        type: choice
-        default: 'chatty'
-        options:
-          - chatty      # 轻松闲聊
-          - newsflash   # 一句话快讯
+        type: string
+        default: '时事短评'
+      word_count:
+        description: '字数档位'
+        required: true
+        type: string
+        default: '中'
+      source_url:
+        description: '参考链接（可选）'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   generate:
@@ -27,12 +34,16 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install openai requests
+        run: pip install openai requests trafilatura
 
       - name: Generate post
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: python scripts/generate.py --style "${{ inputs.style }}"
+        run: |
+          python scripts/generate.py \
+            --genre "${{ inputs.genre }}" \
+            --word-count "${{ inputs.word_count }}" \
+            --source-url "${{ inputs.source_url }}"
 
       - name: Commit and push
         run: |
