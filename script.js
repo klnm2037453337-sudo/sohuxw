@@ -244,6 +244,21 @@ function updatePreview(post) {
     state.currentPreviewContent = post.content;
     previewBody.innerHTML = `<div class="preview-content">${escapeHTML(post.content)}</div>`;
     btnCopyPreview.disabled = false;
+
+    // 显示参考来源
+    const sourceEl = $('#preview-source');
+    const sourceLink = $('#preview-source-link');
+    if (post.source_url && post.source_title) {
+        sourceEl.classList.remove('hidden');
+        sourceLink.href = post.source_url;
+        sourceLink.textContent = post.source_title;
+    } else if (post.source_url) {
+        sourceEl.classList.remove('hidden');
+        sourceLink.href = post.source_url;
+        sourceLink.textContent = post.source_url;
+    } else {
+        sourceEl.classList.add('hidden');
+    }
 }
 
 btnCopyPreview.addEventListener('click', async () => {
@@ -321,6 +336,7 @@ function createPostCard(post) {
             </div>
         </div>
         <div class="post-content">${escapeHTML(post.content)}</div>
+        ${post.source_url ? `<div class="post-source">📎 参考：<a href="${escapeHTML(post.source_url)}" target="_blank" rel="noopener">${escapeHTML(post.source_title || post.source_url)}</a></div>` : ''}
     `;
 
     card.querySelector('.copy-btn').addEventListener('click', (e) => {
@@ -388,6 +404,7 @@ function openModal(post) {
         <div class="modal-time">🕐 ${new Date(post.created_at).toLocaleString('zh-CN')}</div>
         <div class="modal-genre">${escapeHTML(post.genre || post.style || '')}</div>
         <div class="modal-content">${escapeHTML(post.content)}</div>
+        ${post.source_url ? `<div class="modal-source">📎 参考来源：<a href="${escapeHTML(post.source_url)}" target="_blank" rel="noopener">${escapeHTML(post.source_title || post.source_url)}</a></div>` : ''}
         <div class="modal-actions">
             <button class="btn-modal copy-modal-btn">复制</button>
             <button class="btn-modal close-modal-btn">关闭</button>

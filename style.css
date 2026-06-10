@@ -457,6 +457,23 @@ body {
     text-align: center;
     margin-top: 8px;
 }
+/* 参考来源 */
+.preview-source {
+    text-align: center;
+    padding: 6px 10px;
+    font-size: 9px;
+    color: #a08870;
+    border-top: 1px solid rgba(180,140,100,0.1);
+    margin-top: 8px;
+}
+.preview-source.hidden { display: none; }
+.preview-source .source-label { color: #a08870; }
+.preview-source a {
+    color: #8b6914;
+    text-decoration: none;
+    word-break: break-all;
+}
+.preview-source a:hover { text-decoration: underline; }
 .btn-copy-preview {
     padding: 4px 18px;
     border-radius: 10px;
@@ -637,8 +654,19 @@ body {
     color: #5c4a3a;
     white-space: pre-wrap;
     word-break: break-word;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
+.post-card .post-source {
+    font-size: 9px;
+    color: #a08870;
+    border-top: 1px solid rgba(180,140,100,0.1);
+    padding-top: 6px;
+}
+.post-card .post-source a {
+    color: #8b6914;
+    text-decoration: none;
+}
+.post-card .post-source a:hover { text-decoration: underline; }
 .post-card .post-actions {
     display: flex;
     gap: 6px;
@@ -729,8 +757,20 @@ body {
     color: #5c4a3a;
     white-space: pre-wrap;
     word-break: break-word;
+    margin-bottom: 10px;
+}
+.modal-box .modal-source {
+    font-size: 10px;
+    color: #a08870;
+    border-top: 1px solid rgba(180,140,100,0.15);
+    padding-top: 8px;
     margin-bottom: 16px;
 }
+.modal-box .modal-source a {
+    color: #8b6914;
+    text-decoration: none;
+}
+.modal-box .modal-source a:hover { text-decoration: underline; }
 .modal-box .modal-actions {
     display: flex;
     gap: 8px;
