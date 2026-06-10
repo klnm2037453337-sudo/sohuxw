@@ -230,7 +230,23 @@ def generate_post_text(genre: str, word_count: str, source_url: str) -> dict:
     elif "```" in raw:
         raw = raw.split("```")[1].split("```")[0].strip()
 
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        # 容错：AI 返回的 JSON 可能格式不完美，尝试修复
+        import re
+        content_match = re.search(r'"content"\s*:\s*"(.+?)"\s*(?:,\s*"source_title"|$)', raw, re.DOTALL)
+        source_title_match = re.search(r'"source_title"\s*:\s*"(.+?)"', raw)
+        source_url_match = re.search(r'"source_url"\s*:\s*"(.+?)"', raw)
+
+        if content_match:
+            return {
+                "content": content_match.group(1),
+                "source_title": source_title_match.group(1) if source_title_match else "",
+                "source_url": source_url_match.group(1) if source_url_match else "",
+            }
+        # 完全无法解析，整段作为正文
+        return {"content": raw, "source_title": "", "source_url": ""}
 
 
 # ============================================================
