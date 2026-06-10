@@ -188,15 +188,15 @@ def build_system_prompt(genre: str, word_count: str) -> str:
     )
 
 
-DOUBAO_BASE = "https://ark.cn-beijing.volces.com/api/v3"
-DOUBAO_MODEL = "doubao-seed-1-8-251228"
+DEEPSEEK_BASE = "https://api.deepseek.com"
+DEEPSEEK_MODEL = "deepseek-chat"
 
 
 def generate_post_text(genre: str, word_count: str, source_url: str) -> dict:
-    """调用豆包 Chat Completions API 生成帖子（含联网搜索多源改写）"""
+    """调用 DeepSeek API 生成帖子"""
     client = OpenAI(
-        api_key=os.environ["DOUBAO_API_KEY"],
-        base_url=DOUBAO_BASE,
+        api_key=os.environ["DEEPSEEK_API_KEY"],
+        base_url=DEEPSEEK_BASE,
     )
 
     system_prompt = build_system_prompt(genre, word_count)
@@ -204,7 +204,7 @@ def generate_post_text(genre: str, word_count: str, source_url: str) -> dict:
     if source_url:
         user_text = (
             f"请优先参考这个链接的内容：{source_url}\n"
-            f"同时搜索其他相关的主流媒体文章（至多5篇），综合改写为搜狐新闻时间线帖子。"
+            f"请搜索其他相关的主流媒体文章（至多5篇），综合改写为搜狐新闻时间线帖子。"
         )
     else:
         user_text = (
@@ -213,12 +213,11 @@ def generate_post_text(genre: str, word_count: str, source_url: str) -> dict:
         )
 
     response = client.chat.completions.create(
-        model=DOUBAO_MODEL,
+        model=DEEPSEEK_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_text},
         ],
-        extra_body={"web_search": True},
         temperature=0.75,
         max_tokens=1200,
     )
