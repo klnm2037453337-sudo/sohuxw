@@ -1,8 +1,5 @@
 // === 配置 ===
-const REPO_OWNER = 'klnm2037453337-sudo';
-const REPO_NAME = 'sohuxw';
-const GH_PAT = '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';
-const WORKFLOW_ID = 'generate.yml';
+const WORKFLOW_PAGE = 'https://github.com/klnm2037453337-sudo/sohuxw/actions/workflows/generate.yml';
 const POSTS_URL = 'data/posts.json';
 const POLL_INTERVAL = 6000;
 const POLL_TIMEOUT = 120000;
@@ -152,47 +149,29 @@ function showToast(text) {
 // 触发生成
 // ========================================
 
-async function triggerWorkflow() {
+function triggerWorkflow() {
     if (state.isGenerating) return;
 
     state.isGenerating = true;
     generateBtn.disabled = true;
-    generateBtn.textContent = '生成中...';
+    generateBtn.textContent = '⏳ 等待触发...';
 
-    try {
-        const beforeResp = await fetch(POSTS_URL);
-        const beforePosts = beforeResp.ok ? await beforeResp.json() : [];
-        const latestIdBefore = beforePosts.length > 0 ? beforePosts[0].id : null;
-
-        const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/${WORKFLOW_ID}/dispatches`;
-        const resp = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/vnd.github+json',
-                'Authorization': `token ${GH_PAT}`,
-            },
-            body: JSON.stringify({
-                ref: 'main',
-                inputs: {
-                    genre: state.activeGenre,
-                    word_count: state.activeWordCount,
-                    source_url: sourceUrl.value.trim()
-                }
-            })
+    // 记录当前最新帖子 ID，用于轮询检测
+    fetch(POSTS_URL)
+        .then(r => r.ok ? r.json() : [])
+        .then(posts => {
+            const latestIdBefore = posts.length > 0 ? posts[0].id : null;
+            // 打开 GitHub Actions 触发页面（新标签页）
+            window.open(WORKFLOW_PAGE, '_blank');
+            showToast('请在打开的页面点击「Run workflow」→ 绿色「Run workflow」按钮');
+            startPolling(latestIdBefore);
+        })
+        .catch(() => {
+            // 即使获取失败也继续
+            window.open(WORKFLOW_PAGE, '_blank');
+            showToast('请在打开的页面点击「Run workflow」→ 绿色「Run workflow」按钮');
+            startPolling(null);
         });
-
-        if (resp.status !== 204) {
-            const errBody = await resp.text();
-            throw new Error(`${resp.status}: ${errBody}`);
-        }
-
-        showToast('已触发生成，正在等待 AI 写稿...');
-        startPolling(latestIdBefore);
-    } catch (err) {
-        console.error('Workflow trigger error:', err);
-        showToast('生成失败，请稍后重试');
-        resetGenerateButton();
-    }
 }
 
 function resetGenerateButton() {
