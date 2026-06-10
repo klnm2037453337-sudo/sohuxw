@@ -34,7 +34,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install openai requests trafilatura
+        run: pip install openai requests
 
       - name: Generate post
         env:
